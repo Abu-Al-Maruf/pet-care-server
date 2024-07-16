@@ -54,11 +54,46 @@ async function run() {
       });
     };
 
-    //   get all services
-    app.get("/api/v1/services", verifyToken, async (req, res) => {
-      const result = await serviceCollection.find().toArray();
-      res.send(result);
+    //   get services
+
+    // filtering by brand
+    // http://localhost:5000/api/v1/services?brand=Feline Feast
+
+    // sort by price
+    //localhost:5000/api/v1/services?sortField=price&sortOrder=asc
+
+    // pagination
+    // localhost:5000/api/v1/services?page=1&limit=10
+
+    app.get("/api/v1/services", async (req, res) => {
+      const brand = req.query.brand;
+      const sortField = req.query.sortField;
+      const sortOrder = req.query.sortOrder;
+      // pagination
+      const page = Number(req.query.page);
+      const limit = Number(req.query.limit);
+      const skip = (page - 1) * limit;
+
+      let query = {};
+      let sortQuery = {};
+      if (brand) {
+        query.brand = brand;
+      }
+      if (sortField && sortOrder) {
+        sortQuery[sortField] = sortOrder;
+      }
+      // total count for pagination
+      const count = await serviceCollection.estimatedDocumentCount();
+
+      const result = await serviceCollection
+        .find(query)
+        .skip(skip)
+        .limit(limit)
+        .sort(sortQuery)
+        .toArray();
+      res.send({ count, result });
     });
+
     // create booking
     app.post("/api/v1/user/create-booking", async (req, res) => {
       const booking = req.body;
